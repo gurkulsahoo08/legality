@@ -25,7 +25,7 @@ theme = 'PaperMod'
 
   [params.homeInfoParams]
     Title = "Legality"
-    Content = "A journal of long-form writing and analysis."
+    Content = "A journal of truth about law."
 
 [markup]
   [markup.goldmark]
