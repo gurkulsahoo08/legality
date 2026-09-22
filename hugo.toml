@@ -1,0 +1,37 @@
+baseURL = 'https://gurkulsahoo08.github.io/legality/'
+languageCode = 'en-us'
+title = 'Legality'
+theme = 'PaperMod'
+
+[pagination]
+  pagerSize = 15
+
+[params]
+  env = 'production'
+  description = 'Essays and long-form analysis.'
+  author = '<Your Name>'
+  
+  # Clean layout settings
+  defaultTheme = 'auto'
+  disableThemeToggle = false
+  ShowReadingTime = true
+  ShowWordCount = true
+  ShowCodeCopyButtons = true
+  ShowBreadCrumbs = true
+  
+  # Reading ergonomics for text
+  ShowToc = true
+  TocOpen = false
+
+  [params.homeInfoParams]
+    Title = "Legality"
+    Content = "A journal of long-form writing and analysis."
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
+  [markup.tableOfContents]
+    endLevel = 4
+    ordered = false
+    startLevel = 2
