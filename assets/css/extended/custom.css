@@ -17,3 +17,9 @@
   margin-top: 2rem;
   padding-top: 1rem;
 }
+
+.footnote-backref {
+  font-size: 0.7em;
+  opacity: 0.6;
+  margin-left: 4px;
+}
