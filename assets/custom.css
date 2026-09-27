@@ -1,0 +1,11 @@
+.footnote-ref {
+  margin-left: 1px;
+}
+
+.footnote-ref a::before {
+  content: "[";
+}
+
+.footnote-ref a::after {
+  content: "]";
+}
