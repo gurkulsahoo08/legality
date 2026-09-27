@@ -14,7 +14,6 @@
 .footnotes {
   font-size: 0.85em;
   color: var(--secondary);
-  border-top: 1px solid var(--border);
   margin-top: 2rem;
   padding-top: 1rem;
 }
