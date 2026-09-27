@@ -1,0 +1,20 @@
+.footnote-ref {
+  font-size: 0.75em;
+  padding: 0 2px;
+}
+
+.footnote-ref a::before {
+  content: "[";
+}
+
+.footnote-ref a::after {
+  content: "]";
+}
+
+.footnotes {
+  font-size: 0.85em;
+  color: var(--secondary);
+  border-top: 1px solid var(--border);
+  margin-top: 2rem;
+  padding-top: 1rem;
+}
