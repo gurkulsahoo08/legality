@@ -1,0 +1,78 @@
+<script>
+(function () {
+  if (!('speechSynthesis' in window)) return;
+  const content = document.querySelector('.post-content');
+  const meta = document.querySelector('.post-meta');
+  if (!content || !meta) return; // only runs on post pages
+
+  // Build clean text: skip code, footnotes, scripts
+  const clone = content.cloneNode(true);
+  clone.querySelectorAll('pre, code, .footnotes, sup, script, style, figure').forEach(e => e.remove());
+  const blocks = [...clone.querySelectorAll('p, li, h1, h2, h3, h4, h5, h6')]
+    .filter(el => !el.querySelector('p, li, h1, h2, h3, h4, h5, h6'))
+    .map(el => el.textContent.trim())
+    .filter(Boolean)
+    .map(t => /[.!?:]$/.test(t) ? t : t + '.');
+
+  // Chunk into ~200-char pieces (avoids Chrome cutting off long speech)
+  const chunks = [];
+  blocks.forEach(b => {
+    let cur = '';
+    (b.match(/[^.!?]+[.!?]*\s*/g) || [b]).forEach(s => {
+      if ((cur + s).length > 200 && cur) { chunks.push(cur); cur = ''; }
+      cur += s;
+    });
+    if (cur) chunks.push(cur);
+  });
+
+  // UI
+  const wrap = document.createElement('div');
+  wrap.className = 'tts-player';
+  wrap.innerHTML = `
+    <button type="button" class="tts-play">🔊 Listen</button>
+    <button type="button" class="tts-stop" hidden>⏹ Stop</button>
+    <select class="tts-rate" aria-label="Speed">
+      <option value="0.9">0.9×</option>
+      <option value="1" selected>1×</option>
+      <option value="1.25">1.25×</option>
+      <option value="1.5">1.5×</option>
+      <option value="2">2×</option>
+    </select>`;
+  meta.insertAdjacentElement('afterend', wrap);
+
+  const playBtn = wrap.querySelector('.tts-play');
+  const stopBtn = wrap.querySelector('.tts-stop');
+  const rateSel = wrap.querySelector('.tts-rate');
+  let i = 0, state = 'idle'; // idle | playing | paused
+
+  function speak() {
+    if (i >= chunks.length) return reset();
+    const u = new SpeechSynthesisUtterance(chunks[i]);
+    u.lang = document.documentElement.lang || 'en';
+    u.rate = parseFloat(rateSel.value);
+    u.onend = () => { if (state === 'playing') { i++; speak(); } };
+    speechSynthesis.speak(u);
+  }
+  function reset() {
+    speechSynthesis.cancel();
+    i = 0; state = 'idle';
+    playBtn.textContent = '🔊 Listen';
+    stopBtn.hidden = true;
+  }
+
+  playBtn.onclick = () => {
+    if (state === 'idle') {
+      state = 'playing'; playBtn.textContent = '⏸ Pause'; stopBtn.hidden = false; speak();
+    } else if (state === 'playing') {
+      state = 'paused'; speechSynthesis.pause(); playBtn.textContent = '▶ Resume';
+    } else {
+      state = 'playing'; speechSynthesis.resume(); playBtn.textContent = '⏸ Pause';
+    }
+  };
+  stopBtn.onclick = reset;
+  rateSel.onchange = () => { // apply new speed from next chunk
+    if (state === 'playing') { speechSynthesis.cancel(); speak(); }
+  };
+  window.addEventListener('beforeunload', () => speechSynthesis.cancel());
+})();
+</script>

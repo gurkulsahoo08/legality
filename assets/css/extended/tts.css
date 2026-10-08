@@ -1,0 +1,10 @@
+.tts-player { display: flex; gap: 8px; align-items: center; margin: 12px 0; }
+.tts-player button, .tts-player select {
+  background: var(--code-bg);
+  color: var(--primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 14px;
+}
