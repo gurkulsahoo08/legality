@@ -1,0 +1,11 @@
+{{- if .IsPage -}}
+  {{- if .Params.audio -}}
+    {{- $audioUrl := "" -}}
+    {{- if reflect.IsSlice .Params.audio -}}
+      {{- $audioUrl = index .Params.audio 0 -}}
+    {{- else -}}
+      {{- $audioUrl = .Params.audio -}}
+    {{- end -}}
+    <meta name="custom-tts-audio" content="{{ $audioUrl }}">
+  {{- end -}}
+{{- end -}}

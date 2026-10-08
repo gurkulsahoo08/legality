@@ -26,8 +26,12 @@ def extract_text(filepath):
     with open(filepath, 'r', encoding='utf-8') as f:
         content = f.read()
     
-    # Strip YAML front matter
-    text = re.sub(r"^---[\s\S]*?---\s*", "", content)
+    # Strip TOML front matter (+++)
+    text = re.sub(r"^\+\+\+[\s\S]*?\+\+\+\s*", "", content)
+    
+    # Strip YAML front matter (---) just in case
+    text = re.sub(r"^---[\s\S]*?---\s*", "", text)
+    
     # Strip markdown codeblocks
     text = re.sub(r"```[\s\S]*?```", "", text)
     

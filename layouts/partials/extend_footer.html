@@ -1,25 +1,18 @@
-{{- if .IsPage -}}
-{{- $audioUrl := "" -}}
-{{- if .Params.audio -}}
-  {{- if reflect.IsSlice .Params.audio -}}
-    {{- $audioUrl = index .Params.audio 0 -}}
-  {{- else -}}
-    {{- $audioUrl = .Params.audio -}}
-  {{- end -}}
-{{- end -}}
-
 <script>
 (function () {
   const content = document.querySelector('.post-content');
   const meta = document.querySelector('.post-meta');
-  if (!content || !meta) return;
-
-  // Pulls the URL safely, dodging Hugo's Javascript escaping rules
-  const audioSrc = "{{ $audioUrl | safeJS }}";
   
+  // Look for the meta tag we placed in the head
+  const audioMeta = document.querySelector('meta[name="custom-tts-audio"]');
+  
+  // If there is no audio meta tag for this specific post, gracefully abort
+  if (!content || !meta || !audioMeta) return;
+
+  const audioSrc = audioMeta.getAttribute('content');
+
   const PLAY = '<path d="M8 5v14l11-7z"/>';
   const PAUSE = '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
-
   const wrap = document.createElement('div');
   wrap.className = 'tts-player';
   
@@ -192,4 +185,3 @@
   }
 })();
 </script>
-{{- end -}}
