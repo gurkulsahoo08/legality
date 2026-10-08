@@ -1,48 +1,25 @@
+{{- if .IsPage -}}
 <script>
 (function () {
-  if (!('speechSynthesis' in window)) return;
   const content = document.querySelector('.post-content');
   const meta = document.querySelector('.post-meta');
   if (!content || !meta) return;
 
-  // Clean text
-  const clone = content.cloneNode(true);
-  clone.querySelectorAll('pre, code, .footnotes, sup, script, style, figure, .toc').forEach(e => e.remove());
-  const blocks = [...clone.querySelectorAll('p, li, h1, h2, h3, h4, h5, h6')]
-    .filter(el => !el.querySelector('p, li, h1, h2, h3, h4, h5, h6'))
-    .map(el => el.textContent.trim())
-    .filter(Boolean)
-    .map(t => /[.!?:]$/.test(t) ? t : t + '.');
-
-  // Chunks (~200 chars) so Chrome doesn't cut off long speech
-  const chunks = [];
-  blocks.forEach(b => {
-    let cur = '';
-    (b.match(/[^.!?]+[.!?]*\s*/g) || [b]).forEach(s => {
-      if ((cur + s).length > 200 && cur) { chunks.push(cur); cur = ''; }
-      cur += s;
-    });
-    if (cur) chunks.push(cur);
-  });
-  if (!chunks.length) return;
-
-  const starts = [];
-  let total = 0;
-  chunks.forEach(c => { starts.push(total); total += c.length; });
-
-  const CPS = 16; // approx characters spoken per second at 1x
-  const fmt = s => { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
-  const minutes = Math.max(1, Math.round(total / CPS / 60));
-
+  // Fetch the audio URL from Hugo front matter, if it exists
+  const audioSrc = "{{ .Params.audio | default "" }}";
+  
   const PLAY = '<path d="M8 5v14l11-7z"/>';
   const PAUSE = '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
 
   const wrap = document.createElement('div');
   wrap.className = 'tts-player';
+  
+  // Inject the shared UI, identically mimicking the original structure
   wrap.innerHTML = `
+    ${audioSrc ? `<audio preload="metadata" src="${audioSrc}"></audio>` : ''}
     <button type="button" class="tts-play" aria-label="Play"><svg viewBox="0 0 24 24">${PLAY}</svg></button>
-    <div class="tts-title">${minutes}-Minute Listen</div>
-    <div class="tts-track" hidden>
+    <div class="tts-title">Listen</div>
+    <div class="tts-track" ${!audioSrc ? 'hidden' : ''}>
       <span class="tts-time tts-cur">0:00</span>
       <input type="range" class="tts-seek" min="0" max="1000" value="0" aria-label="Timeline">
       <span class="tts-time tts-dur">0:00</span>
@@ -50,91 +27,160 @@
     <button type="button" class="tts-menu-btn" aria-label="Playback speed">
       <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
     </button>
-    <div class="tts-menu" hidden></div>`;
+    <div class="tts-menu" hidden></div>
+  `;
   meta.insertAdjacentElement('afterend', wrap);
 
   const $ = s => wrap.querySelector(s);
-  const playBtn = $('.tts-play'), track = $('.tts-track'), seek = $('.tts-seek');
-  const curEl = $('.tts-cur'), durEl = $('.tts-dur'), menu = $('.tts-menu'), menuBtn = $('.tts-menu-btn');
+  const playBtn = $('.tts-play'), track = $('.tts-track'), seek =$('.tts-seek');
+  const curEl = $('.tts-cur'), durEl = $('.tts-dur'), titleEl =$('.tts-title');
+  const menu = $('.tts-menu'), menuBtn =$('.tts-menu-btn');
+  
+  const fmt = s => { s = Math.max(0, Math.round(s||0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 
-  let i = 0, charPos = 0, rate = 1, state = 'idle', token = 0; // idle | playing | paused
-
-  function update() {
-    const pos = starts[Math.min(i, chunks.length - 1)] + charPos;
-    const pct = Math.min(100, pos / total * 100);
-    seek.value = Math.round(pct * 10);
-    seek.style.setProperty('--p', pct + '%');
-    curEl.textContent = fmt(pos / (CPS * rate));
-    durEl.textContent = fmt(total / (CPS * rate));
-  }
-  function setIcon(p) {
-    playBtn.querySelector('svg').innerHTML = p ? PAUSE : PLAY;
-    playBtn.setAttribute('aria-label', p ? 'Pause' : 'Play');
-  }
-  function speak() {
-    if (i >= chunks.length) return finish();
-    const my = ++token;
-    const u = new SpeechSynthesisUtterance(chunks[i]);
-    u.lang = document.documentElement.lang || 'en';
-    u.rate = rate;
-    u.onboundary = e => { if (my === token) { charPos = e.charIndex; update(); } };
-    u.onend = () => { if (my === token && state === 'playing') { i++; charPos = 0; update(); speak(); } };
-    speechSynthesis.speak(u);
-  }
-  function restartFrom(idx) {
-    token++;
-    speechSynthesis.cancel();
-    i = idx; charPos = 0; state = 'playing';
-    setIcon(true); update(); speak();
-  }
-  function finish() {
-    token++;
-    speechSynthesis.cancel();
-    i = 0; charPos = 0; state = 'idle';
-    setIcon(false); track.hidden = true; update();
-  }
-
-  playBtn.onclick = () => {
-    if (state === 'idle') {
-      track.hidden = false; restartFrom(0);
-    } else if (state === 'playing') {
-      state = 'paused'; speechSynthesis.pause(); setIcon(false);
-    } else {
-      state = 'playing'; speechSynthesis.resume(); setIcon(true);
-    }
+  const buildMenu = (onChange) => {
+    [0.9, 1, 1.25, 1.5, 2].forEach(r => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = r + '× speed';
+      if (r === 1) b.className = 'on';
+      b.onclick = () => {
+        [...menu.children].forEach(c => c.classList.remove('on'));
+        b.classList.add('on');
+        menu.hidden = true;
+        onChange(r);
+      };
+      menu.appendChild(b);
+    });
   };
 
-  // Dragging updates the label; releasing jumps to that spot
-  seek.addEventListener('input', () => {
-    const pos = seek.value / 1000 * total;
-    seek.style.setProperty('--p', seek.value / 10 + '%');
-    curEl.textContent = fmt(pos / (CPS * rate));
-  });
-  seek.addEventListener('change', () => {
-    const pos = seek.value / 1000 * total;
-    let idx = starts.findIndex((s, k) => pos < s + chunks[k].length);
-    restartFrom(idx < 0 ? chunks.length - 1 : idx);
-  });
-
-  // Speed menu
-  [0.9, 1, 1.25, 1.5, 2].forEach(r => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.textContent = r + '× speed';
-    if (r === 1) b.className = 'on';
-    b.onclick = () => {
-      rate = r;
-      [...menu.children].forEach(c => c.classList.remove('on'));
-      b.classList.add('on');
-      menu.hidden = true;
-      if (state !== 'idle') restartFrom(i); else update();
-    };
-    menu.appendChild(b);
-  });
   menuBtn.onclick = e => { e.stopPropagation(); menu.hidden = !menu.hidden; };
   document.addEventListener('click', () => { menu.hidden = true; });
 
-  update();
-  window.addEventListener('beforeunload', () => speechSynthesis.cancel());
+  if (audioSrc) {
+    // ==========================================
+    // CLOUDFLARE R2 MP3 LOGIC
+    // ==========================================
+    const audio = $('audio');
+
+    audio.addEventListener('loadedmetadata', () => {
+      durEl.textContent = fmt(audio.duration);
+      titleEl.textContent = Math.max(1, Math.round(audio.duration / 60)) + '-Minute Listen';
+    });
+
+    audio.addEventListener('timeupdate', () => {
+      if (!audio.duration) return;
+      const pct = (audio.currentTime / audio.duration) * 100;
+      seek.value = Math.round(pct * 10);
+      seek.style.setProperty('--p', pct + '%');
+      curEl.textContent = fmt(audio.currentTime);
+    });
+
+    audio.addEventListener('play', () => playBtn.querySelector('svg').innerHTML = PAUSE);
+    audio.addEventListener('pause', () => playBtn.querySelector('svg').innerHTML = PLAY);
+    audio.addEventListener('ended', () => { 
+      playBtn.querySelector('svg').innerHTML = PLAY; 
+      seek.value = 0; seek.style.setProperty('--p', '0%'); curEl.textContent = '0:00'; 
+    });
+
+    playBtn.addEventListener('click', () => audio.paused ? audio.play() : audio.pause());
+
+    seek.addEventListener('input', () => {
+      if (audio.duration) {
+        curEl.textContent = fmt((seek.value / 1000) * audio.duration);
+        seek.style.setProperty('--p', (seek.value / 10) + '%');
+      }
+    });
+    seek.addEventListener('change', () => { if (audio.duration) audio.currentTime = (seek.value / 1000) * audio.duration; });
+    
+    buildMenu(r => audio.playbackRate = r);
+
+  } else {
+    // ==========================================
+    // BROWSER TTS FALLBACK LOGIC
+    // ==========================================
+    if (!('speechSynthesis' in window)) { wrap.style.display = 'none'; return; }
+    
+    const clone = content.cloneNode(true);
+    clone.querySelectorAll('pre, code, .footnotes, sup, script, style, figure, .toc').forEach(e => e.remove());
+    const blocks = [...clone.querySelectorAll('p, li, h1, h2, h3, h4, h5, h6')]
+      .filter(el => !el.querySelector('p, li, h1, h2, h3, h4, h5, h6'))
+      .map(el => el.textContent.trim()).filter(Boolean)
+      .map(t => /[.!?:]$/.test(t) ? t : t + '.');
+
+    const chunks = [];
+    blocks.forEach(b => {
+      let cur = '';
+      (b.match(/[^.!?]+[.!?]*\s*/g) || [b]).forEach(s => {
+        if ((cur + s).length > 200 && cur) { chunks.push(cur); cur = ''; }
+        cur += s;
+      });
+      if (cur) chunks.push(cur);
+    });
+    if (!chunks.length) { wrap.style.display = 'none'; return; }
+
+    const starts = [];
+    let total = 0;
+    chunks.forEach(c => { starts.push(total); total += c.length; });
+
+    const CPS = 16;
+    titleEl.textContent = Math.max(1, Math.round(total / CPS / 60)) + '-Minute Listen';
+
+    let i = 0, charPos = 0, rate = 1, state = 'idle', token = 0;
+
+    function updateTTS() {
+      const pos = starts[Math.min(i, chunks.length - 1)] + charPos;
+      const pct = Math.min(100, pos / total * 100);
+      seek.value = Math.round(pct * 10);
+      seek.style.setProperty('--p', pct + '%');
+      curEl.textContent = fmt(pos / (CPS * rate));
+      durEl.textContent = fmt(total / (CPS * rate));
+    }
+    function setIcon(p) { playBtn.querySelector('svg').innerHTML = p ? PAUSE : PLAY; }
+    function speak() {
+      if (i >= chunks.length) return finish();
+      const my = ++token;
+      const u = new SpeechSynthesisUtterance(chunks[i]);
+      u.lang = document.documentElement.lang || 'en';
+      u.rate = rate;
+      u.onboundary = e => { if (my === token) { charPos = e.charIndex; updateTTS(); } };
+      u.onend = () => { if (my === token && state === 'playing') { i++; charPos = 0; updateTTS(); speak(); } };
+      speechSynthesis.speak(u);
+    }
+    function restartFrom(idx) {
+      token++; speechSynthesis.cancel();
+      i = idx; charPos = 0; state = 'playing';
+      setIcon(true); updateTTS(); speak();
+    }
+    function finish() {
+      token++; speechSynthesis.cancel();
+      i = 0; charPos = 0; state = 'idle';
+      setIcon(false); track.hidden = true; updateTTS();
+    }
+
+    playBtn.onclick = () => {
+      if (state === 'idle') { track.hidden = false; restartFrom(0); }
+      else if (state === 'playing') { state = 'paused'; speechSynthesis.pause(); setIcon(false); }
+      else { state = 'playing'; speechSynthesis.resume(); setIcon(true); }
+    };
+
+    seek.addEventListener('input', () => {
+      seek.style.setProperty('--p', seek.value / 10 + '%');
+      curEl.textContent = fmt((seek.value / 1000 * total) / (CPS * rate));
+    });
+    seek.addEventListener('change', () => {
+      const pos = seek.value / 1000 * total;
+      let idx = starts.findIndex((s, k) => pos < s + chunks[k].length);
+      restartFrom(idx < 0 ? chunks.length - 1 : idx);
+    });
+
+    buildMenu(r => {
+      rate = r;
+      if (state !== 'idle') restartFrom(i); else updateTTS();
+    });
+
+    updateTTS();
+    window.addEventListener('beforeunload', () => speechSynthesis.cancel());
+  }
 })();
 </script>
+{{- end -}}

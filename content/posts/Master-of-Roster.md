@@ -2,6 +2,7 @@
 date = '2026-10-08T13:30:57+05:30'
 draft = false
 title = 'Master of Roster'
+audio = 'https://pub-79a72c7df73049148893ff1f35d9bdea.r2.dev/Master-of-Roster.mp3'
 +++
 While the recent controversy surrounding Medha Roopam Case, largely captured media attention towards familial connections of Justice SC Sharma. There is another side which hasn't gotten as much attention truly required compared to the former raised point, that is "Master of Roster". This problem is uniquely visible in India out of all democracies who follow the system of dividing their Supreme or Constitutional courts into panel like Germany. But many Supreme or Constitutional Courts around the world to avoid the problem of "Master of Roster" sit en banc, like SCOTUS. It is also one of the points that I believe needs immediate reforms to clamp down arbitrariness in decision making in SC, the Master of Roster gives CJI near dictatorial or at worst unusually concentrated power to single-handedly decide outcome of cases, assuming of course he knows the biases of every Judge and Judge doesn't get swayed and produces a ruling which doesn't align with his previous patterns. I am today going to start with history of how CJI gained such power, before that who decided bench composition, abuse of this power and finally solutions from existing system in other democratic countries and a conclusion. Also I would be later putting a master list article outlining which reforms are urgently needed in Supreme Court, and as I write in detail in future, I am going to hyperlink from that list.
 
