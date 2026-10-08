@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # --- CONFIGURATION ---
-VOICE = "en-US-ChristopherNeural"  
+VOICE = "en-IN-PrabhatNeural"  
 
 # Cloudflare R2 Settings 
 # Get these from your Cloudflare Dashboard -> R2 -> Manage R2 API Tokens
@@ -34,6 +34,11 @@ def extract_text(filepath):
     
     # Strip markdown codeblocks
     text = re.sub(r"```[\s\S]*?```", "", text)
+
+    # Strip footnote markers and definitions
+    text = re.sub(r"(<!--\s*Footnote\s*-->|\[\^\d+\]:[\s\S]*$)", "", text)
+    text = re.sub(r"\^\[.*?\]", "", text)
+    text = re.sub(r"\[\^.*?\]", "", text)
     
     # Convert remaining markdown to HTML and strip tags
     html = markdown.markdown(text)

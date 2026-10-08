@@ -2,6 +2,7 @@
 date = '2026-09-27T20:50:42+05:30'
 draft = false
 title = 'BrowBeating'
+audio = ["https://pub-79a72c7df73049148893ff1f35d9bdea.r2.dev/BrowBeating.mp3"]
 +++
 Recently, following IndianExpress Report or Expose on ECI, there has been lot of fallout be it political, social or legal or judicial- Wait, judicial? Yes, judiciary has been dragged into this matter by many online commentator, activists and political strongman (even lawyers) related to both government and opposition figures for albeit different reasons. I will primarily be focusing on some remarks by Saurav Das and surprise, Prashant Bhushan (especially targeting Hon'ble Justice SC Sharma).[^1]
 
