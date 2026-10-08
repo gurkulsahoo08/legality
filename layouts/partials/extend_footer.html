@@ -6,7 +6,7 @@
   if (!content || !meta) return;
 
   // Fetch the audio URL from Hugo front matter, if it exists
-  const audioSrc = "{{ .Params.audio | default "" }}";
+  const audioSrc = "{{ if .Params.audio }}{{ index .Params.audio 0 }}{{ end }}";
   
   const PLAY = '<path d="M8 5v14l11-7z"/>';
   const PAUSE = '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
